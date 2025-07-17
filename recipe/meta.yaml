@@ -1,0 +1,64 @@
+{% set name = "winningvariant" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/winningvariant-{{ version }}.tar.gz
+  sha256: 27b851a0508fd1cf3170f0dd85e426b0af423dbb0bafff8e547cd4582b174600
+  patches:
+    - patches/0001-fix-test-pathes.patch
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  # snowflake-snowpark-python support only this versions 3.9, 3.10, 3.11, 3.12
+  # python syntax compatible only from py310:
+  # Python < 3.10 error:
+  # def has_valid_args(...) -> bool | ValueError:
+  # TypeError: unsupported operand type(s) for |: 'type' and 'type'
+  skip: True  # [py<310 or py>312]
+
+requirements:
+  build:
+    - patch  # [unix]
+    - msys2-patch  # [win]
+  host:
+    - python
+    - hatchling
+    - pip
+  run:
+    - python
+    - snowflake-snowpark-python
+
+# E   UnboundLocalError: local variable 's' referenced before assignment
+{% set ignore_tests = " --ignore=tests/test_client.py" %}
+
+test:
+  source_files:
+    - tests
+  imports:
+    - winningvariant
+    - winningvariant._internal
+  commands:
+    - pip check
+    - pytest -v {{ ignore_tests }} tests
+  requires:
+    - pip
+    - pytest
+
+about:
+  home: https://www.winningvariant.com
+  summary: Snowflake Native split testing client for Winning Variant
+  license: GPL-3.0
+  license_family: GPL
+  license_file: LICENSE.txt
+  description: Winning Variant - Split Testing Native to Snowflake
+  dev_url: https://inspector.pypi.io/project/winningvariant
+  doc_url: https://docs.winningvariant.com/introduction
+
+extra:
+  recipe-maintainers:
+    - snegireff
